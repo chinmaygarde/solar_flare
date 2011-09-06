@@ -1,0 +1,6 @@
+MIDlet-Name: SolarFlare
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: Buzzy Microsystems Ltd.
+MIDlet-1: , , me.buzzyand.solarflare.clock.ClockMIDlet
+MicroEdition-Profile: IMP-1.0
+MicroEdition-Configuration: CLDC-1.1

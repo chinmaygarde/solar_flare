@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="SolarFlare" default="help" basedir=".">
+    <property name="user.properties.file" value="build.properties"/>
+    <property file="${user.home}/.sunspot.properties"/>
+    <import file="${sunspot.home}/build.xml"/>
+    <target name="just-deploy" depends="init,-check-for-manifest,-do-find-spots,-pre-deploy,-do-deploy,-post-deploy"/>
+</project>

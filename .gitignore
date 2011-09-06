@@ -1,0 +1,7 @@
+.settings/
+.classpath
+.project
+bin/
+build/
+j2meclasses/
+suite/
