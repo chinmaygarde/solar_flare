@@ -25,7 +25,6 @@ package me.buzzyand.solarflare.text;
  * SpotFont.java
  * @author rogermeike (minor mods by vipul)
  */
- 
 
 import java.util.Hashtable;
 
