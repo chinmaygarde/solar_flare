@@ -14,7 +14,7 @@ public class SolarFlareClock extends SolarFlareComponent implements TimerCounter
 		 int cntr = timer.counter(); // Get number of elapsed clock ticks
 		 timer.disable(); // Turn off the counter
 		 double interval = cntr * 0.2400; // Convert to time in microseconds
-		 double seconds = interval/1000000;
+		 double seconds = interval*1000000;
 		 double minutes = seconds/60;
 		 double hours = minutes/60;
 		 
