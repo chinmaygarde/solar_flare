@@ -69,9 +69,10 @@ public class AirTextDemo extends javax.microedition.midlet.MIDlet {
         	disp.setColor(255, 0, 0);
          disp.swingThis(dateString.substring(0, 2), 17);
          disp.setColor(0, 255, 0);
-         disp.swingThis(dateString.substring(3, 5), 17);
+         disp.swingThis(dateString.substring(3, 5), 8);
          disp.setColor(0,0 , 255);
-         disp.swingThis(dateString.substring(6, 8), 17);
+         disp.swingThis(dateString.substring(6, 8), 3);
+         
     }
        
      
