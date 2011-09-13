@@ -108,14 +108,14 @@ public class SetClockSwitches extends MIDlet implements ISwitchListener, TimeInO
 			if (hourCorrection >= 12) {
 				hourCorrection = 0;
 			}
-			System.out.println("Hour updated to " + cal.get(Calendar.HOUR));
+			System.out.println("Hour updated to " + (cal.get(Calendar.HOUR)+1));
 		} else {
 			// set 'minutes'
 			minuteCorrection += 1;
 			if (minuteCorrection >= 60) {
 				minuteCorrection = 0;
 			}
-			System.out.println("Minute updated to " + cal.get(Calendar.MINUTE));
+			System.out.println("Minute updated to " + (cal.get(Calendar.MINUTE)+1));
 		}
 		
 		updateClock();
