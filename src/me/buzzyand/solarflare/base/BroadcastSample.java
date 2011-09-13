@@ -47,6 +47,8 @@ import com.sun.spot.util.Utils;
  */
 public class BroadcastSample extends javax.microedition.midlet.MIDlet {
     
+	private String currentMessage = null;
+	
     protected void startApp() throws MIDletStateChangeException {
         
         System.out.println("I'm about to rock that SPOT !");
@@ -83,6 +85,7 @@ public class BroadcastSample extends javax.microedition.midlet.MIDlet {
                         dg.reset();
                         dgConnection.receive(dg);
                         tmp = dg.readUTF();
+                        currentMessage = tmp;
                         System.out.println("Received: " + tmp + " from " + dg.getAddress());
                     } catch (IOException e) {
                         System.out.println("Nothing received");
@@ -115,10 +118,13 @@ public class BroadcastSample extends javax.microedition.midlet.MIDlet {
                 while(true){
                     try {
                         // We send the message (UTF encoded)
-                        dg.reset();
-                        dg.writeUTF("I rock");
-                        dgConnection.send(dg);
-                        System.out.println("Broadcast is going through");
+                    	if(currentMessage != null) {
+                    		dg.reset();
+                            dg.writeUTF(currentMessage);
+                            dgConnection.send(dg);
+                            System.out.println("Broadcast is going through");
+                            currentMessage = null;
+                    	}
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }

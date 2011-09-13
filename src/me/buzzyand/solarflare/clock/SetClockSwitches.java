@@ -164,6 +164,7 @@ public class SetClockSwitches extends MIDlet implements ISwitchListener, TimeInO
 	}
 
 	public String stringToBroadcast() {
+		updateClock();
 		return hourCorrection + ":" + minuteCorrection;
 	}
 }
