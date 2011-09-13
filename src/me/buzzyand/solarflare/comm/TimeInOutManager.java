@@ -17,24 +17,24 @@ public class TimeInOutManager {
 	
 	private final String REMOTE_SPOT_ADDRESS = "0014.4F01.0000.467E";
 	private DataInputOutputStreamConnection rConnection = null;
-	private RadioOutputStreamConnection rosConnection = null;
+	//private RadioOutputStreamConnection rosConnection = null;
 	
 	public void startListening() {
 		BootloaderListenerService.getInstance().start();
 		new Thread() {
 			public void run() {
 				rConnection = new DataInputOutputStreamConnection();
-				rosConnection = new RadioOutputStreamConnection();
+				//rosConnection = new RadioOutputStreamConnection();
 				
 				System.out.println("Starting time broadcaster");
 				
 				rConnection.connect(REMOTE_SPOT_ADDRESS);
-				rosConnection.connect(REMOTE_SPOT_ADDRESS);
+				//rosConnection.connect(REMOTE_SPOT_ADDRESS);
 				
 				System.out.println("I'm connected");
 				
 				rConnection.startSendingThread();
-				rosConnection.startSendingThread();
+				//rosConnection.startSendingThread();
 				
 				while(true) {
 					// Send the current time to the base station
@@ -50,10 +50,10 @@ public class TimeInOutManager {
 					
 					// Receive any broadcast
 					String recv = rConnection.receive();
-					System.out.println(recv);
+					System.out.println("Broadcast received: " + recv);
 					
-					int iRecv = rosConnection.receive();
-					System.out.println(iRecv);
+					//int iRecv = rosConnection.receive();
+					//System.out.println(iRecv);
 					
 					String hours = null;
 					String minutes = null;
