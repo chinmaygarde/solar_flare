@@ -48,7 +48,7 @@ import com.sun.spot.resources.transducers.ISwitchListener;
 import com.sun.spot.resources.transducers.SwitchEvent;
 import com.sun.spot.service.BootloaderListenerService;
 
-public class SetClockSwitches extends MIDlet implements ISwitchListener, TimeInOutCallback {
+public class SetClockSwitches2 extends MIDlet implements ISwitchListener, TimeInOutCallback {
 	private ISwitch sw1, sw2; // switches
 	private int hourCorrection = 0; // correction used to update hours
 	private int minuteCorrection = 0; // correction used to update minutes
