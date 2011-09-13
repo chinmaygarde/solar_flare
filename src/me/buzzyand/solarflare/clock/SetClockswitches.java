@@ -38,14 +38,17 @@ import java.util.Date;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
+import me.buzzyand.solarflare.comm.TimeInOutCallback;
+import me.buzzyand.solarflare.comm.TimeInOutManager;
 import me.buzzyand.solarflare.text.AirText;
 
 import com.sun.spot.resources.Resources;
 import com.sun.spot.resources.transducers.ISwitch;
 import com.sun.spot.resources.transducers.ISwitchListener;
 import com.sun.spot.resources.transducers.SwitchEvent;
+import com.sun.spot.service.BootloaderListenerService;
 
-public class SetClockswitches extends MIDlet implements ISwitchListener {
+public class SetClockSwitches extends MIDlet implements ISwitchListener, TimeInOutCallback {
 	private ISwitch sw1, sw2; // switches
 	private int hourCorrection = 0; // correction used to update hours
 	private int minuteCorrection = 0; // correction used to update minutes
@@ -55,8 +58,7 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 		sw1 = (ISwitch) Resources.lookup(ISwitch.class, "SW1");
 		sw2 = (ISwitch) Resources.lookup(ISwitch.class, "SW2");
 
-		sw1.addISwitchListener(this); // enable automatic notification of
-										// switches
+		sw1.addISwitchListener(this); // enable automatic notification of switches
 		sw2.addISwitchListener(this);
 
 		System.out
@@ -68,11 +70,11 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 			updateClock();
 
 			disp.setColor(255, 0, 0);
-			disp.swingThis(cal.get(Calendar.HOUR) + "", 8);
+			disp.swingThis(cal.get(Calendar.HOUR) + "", 10);
 			disp.setColor(0, 255, 0);
-			disp.swingThis(cal.get(Calendar.MINUTE) + "", 8);
+			disp.swingThis(cal.get(Calendar.MINUTE) + "", 10);
 			disp.setColor(0, 0, 255);
-			disp.swingThis(cal.get(Calendar.SECOND) + "", 8);
+			disp.swingThis(cal.get(Calendar.SECOND) + "", 10);
 		}
 	}
 
@@ -106,8 +108,6 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 			if (hourCorrection >= 12) {
 				hourCorrection = 0;
 			}
-
-			updateClock();
 			System.out.println("Hour updated to " + cal.get(Calendar.HOUR));
 		} else {
 			// set 'minutes'
@@ -115,10 +115,15 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 			if (minuteCorrection >= 60) {
 				minuteCorrection = 0;
 			}
-
-			updateClock();
 			System.out.println("Minute updated to " + cal.get(Calendar.MINUTE));
 		}
+		
+		updateClock();
+		broadcastCorrection();
+	}
+
+	private void broadcastCorrection() {
+		
 	}
 
 	/**
@@ -126,8 +131,9 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 	 */
 	protected void startApp() throws MIDletStateChangeException {
 		// Listen for downloads/commands over USB connection
-		new com.sun.spot.service.BootloaderListenerService().getInstance()
-				.start();
+		BootloaderListenerService.getInstance().start();
+		TimeInOutManager manager = new TimeInOutManager(this);
+		manager.startListening();
 		try {
 			app();
 		} catch (IOException ex) { // A problem in reading the sensors.
@@ -151,4 +157,13 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 			throws MIDletStateChangeException {
 	}
 
+	public void updateTimerCorrections(int pHourCorrection, int pMinuteCorrection) {
+		hourCorrection = pHourCorrection;
+		minuteCorrection = pMinuteCorrection;
+		updateClock();
+	}
+
+	public String stringToBroadcast() {
+		return hourCorrection + ":" + minuteCorrection;
+	}
 }

@@ -56,6 +56,8 @@ public class DataInputOutputStreamConnection {
 	private DataOutputStream dos = null;
 	private RadioOutputStream ros = null;
 	
+	private String currentMessage = null;
+	
 	public DataInputOutputStreamConnection() {
 	}
     
@@ -150,6 +152,7 @@ public class DataInputOutputStreamConnection {
     	String recv = null;
     	try {
 			recv = dis.readUTF();
+			currentMessage = recv;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			//e.printStackTrace();
@@ -164,7 +167,10 @@ public class DataInputOutputStreamConnection {
             	conn.setTimeout(500);
         		while(connected) {
         			try {
-						send("Ya!", (int)System.currentTimeMillis());
+        				if(currentMessage != null) {
+        					send(currentMessage, (int)System.currentTimeMillis());
+        					currentMessage = null;
+        				}
 					} catch (NoRouteException e1) {
 						e1.printStackTrace();
 					} catch (IOException e1) {
