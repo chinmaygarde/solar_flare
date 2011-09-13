@@ -37,71 +37,50 @@ import com.sun.spot.resources.transducers.ISwitchListener;
 import com.sun.spot.resources.transducers.SwitchEvent;
 import com.sun.spot.sensorboard.EDemoBoard;
 import com.sun.spot.service.BootloaderListenerService;
-import com.sun.spot.util.Utils;
 import java.io.IOException;
 
 import java.util.Calendar;
+import java.util.Date;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
 import me.buzzyand.solarflare.text.AirText;
 
 public class SetClockswitches extends MIDlet implements ISwitchListener { 
-    private ISwitch sw1, sw2;      // Variables to hold the two switches.
-    private int hourcounter = 0;
-    private int minutecounter =0;
-    private String setminutecounter = "0", sethourcounter = "0";
+    private ISwitch sw1, sw2;			// switches
+    private int hourCorrection = 0;	// correction used to update hours
+    private int minuteCorrection = 0;	// correction used to update minutes
     private Calendar cal = Calendar.getInstance();
-
-    /**
-     * First setup a switch listener to monitor both switches for press or release events.
-     * Then call a routine to manually monitor switch 1.
-     *
-     * Note: if the SPOT is attached with a USB cable, and if NetBeans issues the run to the project
-     * or if you use a command shell to do "ant run," you will see the printed output from System.out.
-     */
-    private void monitorSwitches()throws IOException {
-    	
-    	
-    	
+   
+    private void app()throws IOException {
         sw1 = (ISwitch) Resources.lookup(ISwitch.class, "SW1");
         sw2 = (ISwitch) Resources.lookup(ISwitch.class, "SW2");
 
         sw1.addISwitchListener(this);       // enable automatic notification of switches
         sw2.addISwitchListener(this);
-
         
-        System.out.println("Please press switch 1 to set the 'hours' during the next 30 seconds");
-        //Utils.sleep(30000);     // sleep for 30 seconds
-
-        //System.out.println("Time's up.");
-
-        //sw1.removeISwitchListener(this);    // disable automatic notification for switch 1
-
-        //manuallyMonitorSwitch1();
+        System.out.println("Press SW1 to set 'hours' and SW2 to set 'minutes'.");
         
         AirText disp = new AirText();
         
-        hourcounter = cal.get(Calendar.HOUR_OF_DAY);    
-                        
-        minutecounter = cal.get(Calendar.MINUTE);
-        int hour, minute, seconds;
-        
         while (true) {
-            
-            hour = cal.get(Calendar.HOUR_OF_DAY);
-            minute = cal.get(Calendar.MINUTE);
-            seconds = cal.get(Calendar.SECOND);
-
-            System.out.println(System.currentTimeMillis());
+        	updateClock();
             
             disp.setColor(255, 0, 0);
-            disp.swingThis(hour + "", 8);
+            disp.swingThis(cal.get(Calendar.HOUR) + "", 8);
             disp.setColor(0, 255, 0);
-            disp.swingThis(minute + "", 8);
+            disp.swingThis(cal.get(Calendar.MINUTE) + "", 8);
             disp.setColor(0, 0, 255);
-            disp.swingThis(seconds + "", 8);            
+            disp.swingThis(cal.get(Calendar.SECOND) + "", 8);            
         }
+    }
+    
+    /**
+     * Update the calendar with current time plus the provided corrections.
+     * 
+     */
+    private void updateClock() {
+    	cal.setTime(new Date(System.currentTimeMillis() + hourCorrection * 60 * 60 * 1000 + minuteCorrection * 60 * 1000));
     }
     
     /**
@@ -116,55 +95,28 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
     }
     
     public void switchReleased(SwitchEvent evt) {
-    	BootloaderListenerService.getInstance().start();       // Listen for downloads/commands over USB connection
-        //EDemoBoard board = EDemoBoard.getInstance();
-    	//AirText disp = new AirText(board);
-
     	int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
-        if (switchNum ==1){
-    
-        hourcounter++;
-        if (hourcounter>23){
-        	hourcounter = hourcounter-23;
-        }
-        sethourcounter = hourcounter + " ";
-        
-        // Initialize and start the application
-     
-        System.out.println("Switch " + switchNum + " released." + "your set value is :" + sethourcounter);
-
-        }
-        else
-        {   
-        	minutecounter ++;
-        	if (minutecounter>60){ minutecounter = minutecounter-60;}
-        	setminutecounter = minutecounter + " ";
-        	System.out.println("Switch " + switchNum + " released." + "your set value is :" + setminutecounter);
-        	System.out.println("If done press switch 2 to set the 'minutes' during the next 30 seconds");
-      	
-        }
-        
-        
-        cal.set(Calendar.HOUR_OF_DAY, hourcounter);
-        cal.set(Calendar.MINUTE, minutecounter);
-
-
-    }
-
-    /**
-     * Actively loop waiting for the switch state to change.
-     */
-    private void manuallyMonitorSwitch1() {
-        System.out.println("Please press switch 1 several times");
-
-        for (int i = 1; i <= 4; i++) {     // first catch a few clicks of sw1 manually
-            sw1.waitForChange();
-            if (sw1.isClosed()){
-                System.out.println("Switch 1 pressed.  (" + i + " of 4)");
-            } else {
-                System.out.println("Switch 1 released.  (" + i + " of 4)");
-            }
-        }
+    	
+    	if (switchNum == 1) {
+    		// set 'hours'
+    		hourCorrection += 1;
+        	if (hourCorrection >= 12) {
+        		hourCorrection = 0;
+    		}
+        	
+        	updateClock();
+        	System.out.println("Hour updated to " + cal.get(Calendar.HOUR));
+    	}
+    	else {
+    		// set 'minutes'
+        	minuteCorrection += 1;
+        	if (minuteCorrection >= 60) {
+        		minuteCorrection = 0;
+    		}
+        	
+        	updateClock();
+        	System.out.println("Minute updated to " + cal.get(Calendar.MINUTE));
+    	}
     }
 
     /**
@@ -174,7 +126,7 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 	// Listen for downloads/commands over USB connection
 	new com.sun.spot.service.BootloaderListenerService().getInstance().start();
         try {
-            monitorSwitches();
+        	app();
         } catch (IOException ex) { //A problem in reading the sensors.
             ex.printStackTrace();
         }
