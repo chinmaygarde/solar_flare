@@ -31,118 +31,124 @@ package me.buzzyand.solarflare.clock;
  *   
  */
 
-import com.sun.spot.resources.Resources;
-import com.sun.spot.resources.transducers.ISwitch;
-import com.sun.spot.resources.transducers.ISwitchListener;
-import com.sun.spot.resources.transducers.SwitchEvent;
-import com.sun.spot.sensorboard.EDemoBoard;
-import com.sun.spot.service.BootloaderListenerService;
 import java.io.IOException;
-
 import java.util.Calendar;
 import java.util.Date;
+
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
 import me.buzzyand.solarflare.text.AirText;
 
-public class SetClockswitches extends MIDlet implements ISwitchListener { 
-    private ISwitch sw1, sw2;			// switches
-    private int hourCorrection = 0;	// correction used to update hours
-    private int minuteCorrection = 0;	// correction used to update minutes
-    private Calendar cal = Calendar.getInstance();
-   
-    private void app()throws IOException {
-        sw1 = (ISwitch) Resources.lookup(ISwitch.class, "SW1");
-        sw2 = (ISwitch) Resources.lookup(ISwitch.class, "SW2");
+import com.sun.spot.resources.Resources;
+import com.sun.spot.resources.transducers.ISwitch;
+import com.sun.spot.resources.transducers.ISwitchListener;
+import com.sun.spot.resources.transducers.SwitchEvent;
 
-        sw1.addISwitchListener(this);       // enable automatic notification of switches
-        sw2.addISwitchListener(this);
-        
-        System.out.println("Press SW1 to set 'hours' and SW2 to set 'minutes'.");
-        
-        AirText disp = new AirText();
-        
-        while (true) {
-        	updateClock();
-            
-            disp.setColor(255, 0, 0);
-            disp.swingThis(cal.get(Calendar.HOUR) + "", 8);
-            disp.setColor(0, 255, 0);
-            disp.swingThis(cal.get(Calendar.MINUTE) + "", 8);
-            disp.setColor(0, 0, 255);
-            disp.swingThis(cal.get(Calendar.SECOND) + "", 8);            
-        }
-    }
-    
-    /**
-     * Update the calendar with current time plus the provided corrections.
-     * 
-     */
-    private void updateClock() {
-    	cal.setTime(new Date(System.currentTimeMillis() + hourCorrection * 60 * 60 * 1000 + minuteCorrection * 60 * 1000));
-    }
-    
-    /**
-     * These methods are the "call backs" that are invoked whenever the
-     * switch is pressed or released. They are run in a new thread.
-     *
-     * @param sw the switch that was pressed/released.
-     */
-    public void switchPressed(SwitchEvent evt) {
-        int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
-        System.out.println("Switch " + switchNum + " pressed.");
-    }
-    
-    public void switchReleased(SwitchEvent evt) {
-    	int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
-    	
-    	if (switchNum == 1) {
-    		// set 'hours'
-    		hourCorrection += 1;
-        	if (hourCorrection >= 12) {
-        		hourCorrection = 0;
-    		}
-        	
-        	updateClock();
-        	System.out.println("Hour updated to " + cal.get(Calendar.HOUR));
-    	}
-    	else {
-    		// set 'minutes'
-        	minuteCorrection += 1;
-        	if (minuteCorrection >= 60) {
-        		minuteCorrection = 0;
-    		}
-        	
-        	updateClock();
-        	System.out.println("Minute updated to " + cal.get(Calendar.MINUTE));
-    	}
-    }
+public class SetClockswitches extends MIDlet implements ISwitchListener {
+	private ISwitch sw1, sw2; // switches
+	private int hourCorrection = 0; // correction used to update hours
+	private int minuteCorrection = 0; // correction used to update minutes
+	private Calendar cal = Calendar.getInstance();
 
-    /**
-     * startApp() is the MIDlet call that starts the application.
-     */
-    protected void startApp() throws MIDletStateChangeException {
-	// Listen for downloads/commands over USB connection
-	new com.sun.spot.service.BootloaderListenerService().getInstance().start();
-        try {
-        	app();
-        } catch (IOException ex) { //A problem in reading the sensors.
-            ex.printStackTrace();
-        }
-    }
-    
-    /**
-     * This will never be called by the Squawk VM.
-     */
-    protected void pauseApp() {
-    }
-    
-    /**
-     * Called if the MIDlet is terminated by the system.
-     * @param unconditional If true the MIDlet must cleanup and release all resources.
-     */
-    protected void destroyApp(boolean unconditional) throws MIDletStateChangeException {
-    }
-    
+	private void app() throws IOException {
+		sw1 = (ISwitch) Resources.lookup(ISwitch.class, "SW1");
+		sw2 = (ISwitch) Resources.lookup(ISwitch.class, "SW2");
+
+		sw1.addISwitchListener(this); // enable automatic notification of
+										// switches
+		sw2.addISwitchListener(this);
+
+		System.out
+				.println("Press SW1 to set 'hours' and SW2 to set 'minutes'.");
+
+		AirText disp = new AirText();
+
+		while (true) {
+			updateClock();
+
+			disp.setColor(255, 0, 0);
+			disp.swingThis(cal.get(Calendar.HOUR) + "", 8);
+			disp.setColor(0, 255, 0);
+			disp.swingThis(cal.get(Calendar.MINUTE) + "", 8);
+			disp.setColor(0, 0, 255);
+			disp.swingThis(cal.get(Calendar.SECOND) + "", 8);
+		}
+	}
+
+	/**
+	 * Update the calendar with current time plus the provided corrections.
+	 * 
+	 */
+	private void updateClock() {
+		cal.setTime(new Date(System.currentTimeMillis() + hourCorrection * 60
+				* 60 * 1000 + minuteCorrection * 60 * 1000));
+	}
+
+	/**
+	 * These methods are the "call backs" that are invoked whenever the switch
+	 * is pressed or released. They are run in a new thread.
+	 * 
+	 * @param sw
+	 *            the switch that was pressed/released.
+	 */
+	public void switchPressed(SwitchEvent evt) {
+		int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
+		System.out.println("Switch " + switchNum + " pressed.");
+	}
+
+	public void switchReleased(SwitchEvent evt) {
+		int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
+
+		if (switchNum == 1) {
+			// set 'hours'
+			hourCorrection += 1;
+			if (hourCorrection >= 12) {
+				hourCorrection = 0;
+			}
+
+			updateClock();
+			System.out.println("Hour updated to " + cal.get(Calendar.HOUR));
+		} else {
+			// set 'minutes'
+			minuteCorrection += 1;
+			if (minuteCorrection >= 60) {
+				minuteCorrection = 0;
+			}
+
+			updateClock();
+			System.out.println("Minute updated to " + cal.get(Calendar.MINUTE));
+		}
+	}
+
+	/**
+	 * startApp() is the MIDlet call that starts the application.
+	 */
+	protected void startApp() throws MIDletStateChangeException {
+		// Listen for downloads/commands over USB connection
+		new com.sun.spot.service.BootloaderListenerService().getInstance()
+				.start();
+		try {
+			app();
+		} catch (IOException ex) { // A problem in reading the sensors.
+			ex.printStackTrace();
+		}
+	}
+
+	/**
+	 * This will never be called by the Squawk VM.
+	 */
+	protected void pauseApp() {
+	}
+
+	/**
+	 * Called if the MIDlet is terminated by the system.
+	 * 
+	 * @param unconditional
+	 *            If true the MIDlet must cleanup and release all resources.
+	 */
+	protected void destroyApp(boolean unconditional)
+			throws MIDletStateChangeException {
+	}
+
 }
