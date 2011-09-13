@@ -43,7 +43,7 @@ public class ClockMIDlet extends MIDlet implements ISwitchListener {
 		if(switchEvent.getSwitch().hasTag(TAG_CLOCK)) {
 			component = new SolarFlareClock();
 		} else if(switchEvent.getSwitch().hasTag(TAG_TIMER)) {
-			component = new SolarFlareTimer();
+			
 		}
 		
 		if(component != null)
