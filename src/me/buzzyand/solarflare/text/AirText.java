@@ -1,32 +1,32 @@
 /*
-* Copyright (c) 2006 Sun Microsystems, Inc.
-* 
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to 
-* deal in the Software without restriction, including without limitation the 
-* rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-* sell copies of the Software, and to permit persons to whom the Software is 
-* furnished to do so, subject to the following conditions:
-* 
-* The above copyright notice and this permission notice shall be included in 
-* all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
-* DEALINGS IN THE SOFTWARE.
- **/       
+ * Copyright (c) 2006-2010 Sun Microsystems, Inc.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to 
+ * deal in the Software without restriction, including without limitation the 
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+ * sell copies of the Software, and to permit persons to whom the Software is 
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ * DEALINGS IN THE SOFTWARE.
+ **/
+
 package me.buzzyand.solarflare.text;
 
-import com.sun.spot.sensorboard.capabilities.ITriColorLEDController;
-import com.sun.spot.sensorboard.EDemoBoard;
-import com.sun.spot.sensorboard.peripheral.IAccelerometer3D;
-import com.sun.spot.sensorboard.peripheral.ITriColorLED;
+import com.sun.spot.resources.Resources;
+import com.sun.spot.resources.transducers.IAccelerometer3D;
+import com.sun.spot.resources.transducers.ITriColorLEDArray;
+import com.sun.spot.sensorboard.hardware.IADT7411;
 import java.io.IOException;
-import java.util.Hashtable;
 
 /**
  * This class is used to flash the LEDs on and off in a pattern that
@@ -45,13 +45,9 @@ import java.util.Hashtable;
 public class AirText {
     
     /**
-     * A cache of the demoboard
-     */
-    private EDemoBoard demoBoard;
-    /**
      * The array of LEDs to blink
      */
-    private ITriColorLED[] LED;
+    private ITriColorLEDArray LED;
     /**
      * The device used to sense acceleration
      */
@@ -68,15 +64,14 @@ public class AirText {
      * Creates a new instance of AirText
      * @param inBoard the eDemoBoard we will be operating on
      */
-    public AirText( EDemoBoard inBoard ) {
-        demoBoard = inBoard;
-        LED = demoBoard.getLEDs();
-        accelerometer = demoBoard.getAccelerometer();
+    public AirText(  ) {
+        LED           = (ITriColorLEDArray)Resources.lookup(ITriColorLEDArray.class);
+        accelerometer = (IAccelerometer3D) Resources.lookup(IAccelerometer3D.class );
+        IADT7411 adt = (IADT7411) Resources.lookup(IADT7411.class);
+        if (adt != null) adt.setFastConversion(true);
         font = new SpotFont();
         setColor( 0, 0, 0);
-        for ( int i = 0; i < LED.length; i++ ) {
-            LED[i].setOff();
-        }
+        LED.setOff();
     }
     
     /**
@@ -93,22 +88,8 @@ public class AirText {
      * @param blue non-zero if you want the LEDs to display blue
      */
     public void setColor( int red, int green, int blue ){
-        for ( int i = 0; i < LED.length; i++ ) {
-            LED[i].setOff();
-            LED[i].setRGB((red==0)?0:255,(green==0)?0:255,(blue==0)?0:255);
-        }
-    }
-    
-    public void setGreenColor() {
-    	setColor(0, 255, 0);
-    }
-    
-    public void setBlueColor() {
-    	setColor(0, 0, 255);
-    }
-    
-    public void setRedColor() {
-    	setColor(255, 0, 0);
+        LED.setOff();
+        LED.setRGB((red==0)?0:255,(green==0)?0:255,(blue==0)?0:255);
     }
     
     /**
@@ -190,11 +171,11 @@ public class AirText {
             dots = font.getChar(character);
             
             for ( int i = 0; i < dots.length; i++ ){
-                bltLEDs( dots[i] );
+                LED.setOn( dots[i] );
                 // System.out.print(character);
                 Thread.sleep(1);
             }
-            bltLEDs(0);
+            LED.setOff();
             Thread.sleep(1);
             
         } catch (InterruptedException ex) {
@@ -210,33 +191,16 @@ public class AirText {
         try {
             dots = font.getChar(character);
             for ( int i = dots.length-1; i >= 0; i-- ) {
-                bltLEDs( dots[i] );
+                LED.setOn( dots[i] );
                 // System.out.print(character);
                 Thread.sleep(1);
             }
-            bltLEDs(0);
+            LED.setOff();
             Thread.sleep(1);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
     }
-    
-    /**
-     * Set the LEDs to a specified pattern.  This allows you to set
-     * the status of all the LEDs at once.  Note that we don't provide
-     * support for intensity levels because on LEDs intensities are
-     * acheived by pulsing the LED and this would screw up the data we
-     * are trying to display.
-     * @param ledMap Each of the lower 8 bits corresponds to an 
-     * LEDs on/off status (1 = on, 0 = off). This really should be 
-     * an unsigned byte (but there isn't one).
-     */
-    public void bltLEDs(int ledMap){
-        for ( int i = 0; i < LED.length; i++ ) {
-            LED[i].setOn(((ledMap>>i)&1)==1);
-        }
-    }
-
     
     /**
      * Scroll a string across the swinging display
@@ -325,10 +289,10 @@ public class AirText {
         
         try {
             for (int i = offset; i < offset + size; i++ ){
-                bltLEDs( bitmap[i] );
+                LED.setOn( bitmap[i] );
                 Thread.sleep(1);
             }
-            bltLEDs(0);
+            LED.setOff();
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
@@ -337,10 +301,10 @@ public class AirText {
     private void bltBitmapBackward(int[] bitmap, int offset, int size) {
         try {
             for (int i = offset + size - 1; i >= offset; i-- ){
-                bltLEDs( bitmap[i] );
+                LED.setOn( bitmap[i] );
                 Thread.sleep(1);
             }
-            bltLEDs(0);
+            LED.setOff();
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }

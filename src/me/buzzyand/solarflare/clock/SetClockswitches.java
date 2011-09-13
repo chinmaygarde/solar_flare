@@ -40,6 +40,7 @@ import com.sun.spot.service.BootloaderListenerService;
 import com.sun.spot.util.Utils;
 import java.io.IOException;
 
+import java.util.Calendar;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
@@ -49,7 +50,9 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
     private ISwitch sw1, sw2;      // Variables to hold the two switches.
     private int hourcounter = 0;
     private int minutecounter =0;
-    
+    private String setminutecounter = "0", sethourcounter = "0";
+    private Calendar cal = Calendar.getInstance();
+
     /**
      * First setup a switch listener to monitor both switches for press or release events.
      * Then call a routine to manually monitor switch 1.
@@ -66,18 +69,39 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
 
         sw1.addISwitchListener(this);       // enable automatic notification of switches
         sw2.addISwitchListener(this);
+
         
         System.out.println("Please press switch 1 to set the 'hours' during the next 30 seconds");
-        Utils.sleep(30000);     // sleep for 30 seconds
+        //Utils.sleep(30000);     // sleep for 30 seconds
 
-        System.out.println("Time's up.");
+        //System.out.println("Time's up.");
 
-        sw1.removeISwitchListener(this);    // disable automatic notification for switch 1
+        //sw1.removeISwitchListener(this);    // disable automatic notification for switch 1
 
-        manuallyMonitorSwitch1();
+        //manuallyMonitorSwitch1();
         
-        System.out.println("Good bye");
-        notifyDestroyed();  // exit from MIDlet
+        AirText disp = new AirText();
+        
+        hourcounter = cal.get(Calendar.HOUR_OF_DAY);    
+                        
+        minutecounter = cal.get(Calendar.MINUTE);
+        int hour, minute, seconds;
+        
+        while (true) {
+            
+            hour = cal.get(Calendar.HOUR_OF_DAY);
+            minute = cal.get(Calendar.MINUTE);
+            seconds = cal.get(Calendar.SECOND);
+
+            System.out.println(System.currentTimeMillis());
+            
+            disp.setColor(255, 0, 0);
+            disp.swingThis(hour + "", 8);
+            disp.setColor(0, 255, 0);
+            disp.swingThis(minute + "", 8);
+            disp.setColor(0, 0, 255);
+            disp.swingThis(seconds + "", 8);            
+        }
     }
     
     /**
@@ -93,34 +117,38 @@ public class SetClockswitches extends MIDlet implements ISwitchListener {
     
     public void switchReleased(SwitchEvent evt) {
     	BootloaderListenerService.getInstance().start();       // Listen for downloads/commands over USB connection
-        EDemoBoard board = EDemoBoard.getInstance();
-    	AirText disp = new AirText(board);
-    	
+        //EDemoBoard board = EDemoBoard.getInstance();
+    	//AirText disp = new AirText(board);
+
     	int switchNum = (evt.getSwitch() == sw1) ? 1 : 2;
         if (switchNum ==1){
+    
         hourcounter++;
         if (hourcounter>23){
         	hourcounter = hourcounter-23;
         }
-        String sethourcounter = hourcounter + " ";
+        sethourcounter = hourcounter + " ";
         
         // Initialize and start the application
      
         System.out.println("Switch " + switchNum + " released." + "your set value is :" + sethourcounter);
-        disp.setColor(255, 0, 0);
-        disp.swingThis(sethourcounter, 8);
+
         }
         else
         {   
         	minutecounter ++;
         	if (minutecounter>60){ minutecounter = minutecounter-60;}
-        	String setminutecounter = minutecounter + " ";
+        	setminutecounter = minutecounter + " ";
         	System.out.println("Switch " + switchNum + " released." + "your set value is :" + setminutecounter);
         	System.out.println("If done press switch 2 to set the 'minutes' during the next 30 seconds");
-        	disp.setColor(255, 0, 0);
-            disp.swingThis(setminutecounter, 8);
-        	
+      	
         }
+        
+        
+        cal.set(Calendar.HOUR_OF_DAY, hourcounter);
+        cal.set(Calendar.MINUTE, minutecounter);
+
+
     }
 
     /**
