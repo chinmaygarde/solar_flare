@@ -1,0 +1,7 @@
+MIDlet-Name: SolarFlare
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: CMUSV
+MIDlet-Description: WiFi mesh networking over Zigbee
+MIDlet-1: SolarFlare, , edu.cmu.solarflare.SolarFlare
+MicroEdition-Profile: IMP-1.0
+MicroEdition-Configuration: CLDC-1.1
