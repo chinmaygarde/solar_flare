@@ -9,6 +9,7 @@ import javax.microedition.io.DatagramConnection;
 import com.sun.spot.io.j2me.radiogram.RadiogramConnection;
 import com.sun.spot.peripheral.radio.RadioFactory;
 import com.sun.spot.util.IEEEAddress;
+import org.json.me.JSONException;
 import org.json.me.JSONObject;
 
 public class Zigbee {
@@ -72,7 +73,7 @@ public class Zigbee {
                         String msg = receiverDatagram.readUTF();
                         System.out.println("Zigbee got: " + msg);
                         
-                        //TODO: process message
+                        //TODO: process message, only if we're not the sender and if it's a new messageID
                     } catch (IOException e) {
                         System.out.println("Error, ZigBee I/O: Nothing received. " + e);
                     }
@@ -81,16 +82,35 @@ public class Zigbee {
         }.start();
     }
     
-    public void broadcastClient(Client c) {
-        JSONObject m = new JSONObject();
-        //TODO: add some json attributes
+    public void broadcastNewClient(Client c) {
+        try {
+            JSONObject m = new JSONObject();
+            m.put("action", "adduser");
+            m.put("username", c.userName);
+            m.put("userid", c.userID);
+            broadcastJSON(m);
+        } catch (JSONException e) {
+            System.out.println("Error, ZigBee JSON: " + e);
+        }
+        
     }
     
     public void broadcastJSON(JSONObject m) {
-        //TODO: add sender, receiver, and messageid, then send off
+        try {
+            // add sender, receiver, and messageID
+            m.put("sender", address);
+            m.put("receiver", "");
+            m.put("messageid", address + (seqNo++));
+            
+            // serialize JSON and send off
+            broadcast(m.toString());
+        } catch (JSONException e) {
+            System.out.println("Error, ZigBee JSON: " + e);
+        }
     }
     
     public void broadcast(String m) {
+        // add message to outgoing buffer
         outgoing.put(m);
     }
 }

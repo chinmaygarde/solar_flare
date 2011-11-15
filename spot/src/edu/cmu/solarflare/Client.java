@@ -1,5 +1,8 @@
 package edu.cmu.solarflare;
 
+import org.json.me.JSONException;
+import org.json.me.JSONObject;
+
 public class Client {
     public String userID;
     public String userName;
@@ -11,7 +14,14 @@ public class Client {
         this.spotAddress = spotAddress;
     }
     
-    public String toJSON() {
-        return "{\"username\":\"" + userName + "\",\"userid\":\"" + userID + "\"}";
+    public JSONObject toJSONObject() {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("username", userName);
+            json.put("userid", userID);
+        } catch (JSONException e) {
+            System.out.println("Error, Client JSON: " + e);
+        }
+        return json;
     }
 }

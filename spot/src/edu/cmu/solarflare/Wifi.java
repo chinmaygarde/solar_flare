@@ -60,6 +60,7 @@ public class Wifi {
             sendAndCheckUART(startupCommands[i][0], startupCommands[i][1], 5);
         }
         
+        System.out.println("Wifi on.");
     }
     
     public void startComm() {
@@ -72,8 +73,9 @@ public class Wifi {
             public void run() {
                 while (true) {
                     try {
-                        Object m = outgoing.get();  // will block until there's a message to send
-                        //TODO: send message in gainspan protocol
+                        String m = outgoing.get();  // will block until there's a message to send
+                        System.out.println("Sending to WiFi module: " + m);
+                        sendUART(m);
                     } catch (InterruptedException e) {
                         System.out.println("Error, WiFi threads: Could not get message from outgoing buffer. " + e);
                     }
@@ -122,26 +124,34 @@ public class Wifi {
     
     public void processWifiClientMessage(Integer clientCID, String msg) {
         System.out.println("Wifi message from " + clientCID + ": " + msg);
-        try {
-            msgJSON = new JSONObject(msg);
-            msgAction = msgJSON.getString("action");
-            
-            // protocol-specific processing
-            if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
-                // add client to local state
-                localClientCIDs.put(msgJSON.getString("userid"), clientCID);
-                spot.addLocalClient(
-                        msgJSON.getString("userid"),
-                        msgJSON.getString("username"),
-                        clientCID);
-            } else if (msgAction.equals("usermessage")) {
-                
-            } else {
-                System.out.println("Message action '" + msgAction + "' not recognized!");
-            }
-        } catch (JSONException e) {
-            System.out.println("Error, WiFi JSON: " + e);
+        for (int i = 0; i < 5; i++) {
+            Utils.sleep(3000);
+            sendToClient(clientCID, "yuhuu");
         }
+//        try {
+//            msgJSON = new JSONObject(msg);
+//            msgAction = msgJSON.getString("action");
+//            
+//            // protocol-specific processing
+//            if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
+//                // add client
+//                localClientCIDs.put(msgJSON.getString("userid"), clientCID);
+//                spot.addLocalClient(
+//                        msgJSON.getString("userid"),
+//                        msgJSON.getString("username"),
+//                        clientCID);
+//            } else if (msgAction.equals("usermessage")) {
+//                
+//            } else {
+//                System.out.println("Message action '" + msgAction + "' not recognized!");
+//            }
+//        } catch (JSONException e) {
+//            System.out.println("Error, WiFi JSON: " + e);
+//        }
+    }
+    
+    public void sendToClient(Integer clientCID, String msg) {
+        outgoing.put((char) 27 + "S" + clientCID + msg);    // <Esc>S<CID><message>
     }
     
     // Send message to WiFi module and read responses until receiving an expected string.
@@ -192,7 +202,7 @@ public class Wifi {
                     rxBuffer[rxIndex] = rxByte;
                     rxIndex++;
                     //System.out.println((char)rxByte + " = " + rxByte + " (available: " + rxBytesAvailable + ") ");
-                    Utils.sleep(10);    // a delay is needed for some bytes to show up in spot.board.availableUART()
+                    Utils.sleep(5);    // a delay is needed for some bytes to show up in spot.board.availableUART()
                 } catch (IOException e) {
                     System.out.println("Error reading from UART: " + e);
                 }
