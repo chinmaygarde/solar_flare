@@ -3,6 +3,7 @@ package edu.cmu.solarflare;
 import com.sun.spot.peripheral.TimeoutException;
 import com.sun.spot.util.Utils;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.json.me.JSONArray;
@@ -76,6 +77,7 @@ public class Wifi {
                         String m = outgoing.get();  // will block until there's a message to send
                         System.out.println("Sending to WiFi module: " + m);
                         sendUART(m);
+                        this.sleep(100);
                     } catch (InterruptedException e) {
                         System.out.println("Error, WiFi threads: Could not get message from outgoing buffer. " + e);
                     }
@@ -124,30 +126,62 @@ public class Wifi {
     
     public void processWifiClientMessage(Integer clientCID, String msg) {
         System.out.println("Wifi message from " + clientCID + ": " + msg);
-        for (int i = 0; i < 5; i++) {
-            Utils.sleep(3000);
-            sendToClient(clientCID, "yuhuu");
+        
+        try {
+            msgJSON = new JSONObject(msg);
+            msgAction = msgJSON.getString("action");
+            
+            // protocol-specific processing
+            if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
+                // add client
+                localClientCIDs.put(msgJSON.getString("userid"), clientCID);
+                spot.addLocalClient(
+                        msgJSON.getString("userid"),
+                        msgJSON.getString("username"),
+                        clientCID);
+            } else if (msgAction.equals("usermessage")) {
+                
+            } else {
+                System.out.println("Message action '" + msgAction + "' not recognized!");
+            }
+        } catch (JSONException e) {
+            System.out.println("Error, WiFi JSON: " + e);
         }
-//        try {
-//            msgJSON = new JSONObject(msg);
-//            msgAction = msgJSON.getString("action");
-//            
-//            // protocol-specific processing
-//            if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
-//                // add client
-//                localClientCIDs.put(msgJSON.getString("userid"), clientCID);
-//                spot.addLocalClient(
-//                        msgJSON.getString("userid"),
-//                        msgJSON.getString("username"),
-//                        clientCID);
-//            } else if (msgAction.equals("usermessage")) {
-//                
-//            } else {
-//                System.out.println("Message action '" + msgAction + "' not recognized!");
-//            }
-//        } catch (JSONException e) {
-//            System.out.println("Error, WiFi JSON: " + e);
-//        }
+    }
+    
+    // send entire list of known clients to one local user
+    public void sendClientList(Integer clientCID) {
+        JSONArray clientArray = new JSONArray();
+        for (Enumeration e = spot.clients.elements(); e.hasMoreElements();) {
+            clientArray.put(((Client) e.nextElement()).toJSONObject());
+        }
+        JSONObject m = new JSONObject();
+        try {
+            m.put("action", "adduser");
+            m.put("users", clientArray);
+            sendToClient(clientCID, m.toString());
+        } catch (JSONException e) {
+            System.out.println("Error, WiFi JSON: " + e);
+        }
+    }
+    
+    public void broadcastNewClient(Client c) {
+        JSONArray clientArray = new JSONArray();
+        clientArray.put(c.toJSONObject());
+        JSONObject m = new JSONObject();
+        String userID;
+        try {
+            m.put("action", "adduser");
+            m.put("users", clientArray);
+            for (Enumeration e = localClientCIDs.keys(); e.hasMoreElements();) {
+                userID = (String) e.nextElement();
+                if (!userID.equals(c.userID)) {
+                    sendToClient((Integer) localClientCIDs.get(userID), m.toString());
+                }
+            }
+        } catch (JSONException e) {
+            System.out.println("Error, WiFi JSON: " + e);
+        }
     }
     
     public void sendToClient(Integer clientCID, String msg) {

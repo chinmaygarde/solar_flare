@@ -16,7 +16,7 @@ public class SolarFlare extends MIDlet {
     public EDemoBoard board = EDemoBoard.getInstance();
     private Zigbee zigbee;
     private Wifi wifi;
-    private Hashtable clients;          // all known clients in the network (userID => Client object)
+    public Hashtable clients;          // all known clients in the network (userID => Client object)
  
     protected void startApp() throws MIDletStateChangeException {
         System.out.println("SPOT on.");
@@ -28,11 +28,11 @@ public class SolarFlare extends MIDlet {
         zigbee = new Zigbee(this);
         wifi = new Wifi(this, "ulala", 10000);  // TCP server on port 10000
         
-//        try {
-//            zigbee.init();
-//        } catch (IOException e) {
-//            System.out.println("Error, ZigBee I/O: Could not open radiogram broadcast connection. " + e);
-//        }
+        try {
+            zigbee.init();
+        } catch (IOException e) {
+            System.out.println("Error, ZigBee I/O: Could not open radiogram broadcast connection. " + e);
+        }
         
         try {
             wifi.init();
@@ -44,26 +44,14 @@ public class SolarFlare extends MIDlet {
             System.out.println("Error, WiFi general: " + e);
         }
         
-//        zigbee.startComm();
+        zigbee.startComm();
         wifi.startComm();
     }
  
     public void addLocalClient(String userID, String userName, Integer clientCID) {
-        addClient(userID, userName, zigbee.address);
-        
-        // send the new user our list of known clients
-        JSONArray clientArray = new JSONArray();
-        for (Enumeration e = clients.elements(); e.hasMoreElements();) {
-            clientArray.put(((Client) e.nextElement()).toJSONObject());
-        }
-        JSONObject m = new JSONObject();
-        try {
-            m.put("action", "adduser");
-            m.put("users", clientArray);
-            wifi.sendToClient(clientCID, m.toString());
-        } catch (JSONException e) {
-            System.out.println("Error, WiFi JSON: " + e);
-        }
+        System.out.println("Adding local client: " + userID + "(" + userName + ") with CID " + clientCID);
+        wifi.sendClientList(clientCID);     // send our list of known clients to the new user
+        addClient(userID, userName, zigbee.address);    // add user to local state
     }
     
     public void addClient(String userID, String userName, String spotAddress) {
@@ -76,7 +64,7 @@ public class SolarFlare extends MIDlet {
         }
         
         //TODO: tell all local clients about the new user
-        //wifi.broadcastNewClient(c);
+        wifi.broadcastNewClient(c);
     }
     
     protected void pauseApp() {

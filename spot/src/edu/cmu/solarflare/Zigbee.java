@@ -22,6 +22,8 @@ public class Zigbee {
     private Datagram receiverDatagram;
     private MessageBuffer outgoing;     // a queue for outgoing messages, emptied by the sender thread
     private Vector lastMessages;        // (for broadcast) don't interpret previously seen messages
+    private JSONObject msgJSON;
+    private String msgAction;
     
     public Zigbee(SolarFlare spot) {
         this.spot = spot;
@@ -48,10 +50,9 @@ public class Zigbee {
             public void run() {                
                 while (true) {
                     try {
-                        String m = outgoing.get();  // will block until there's a message to send
                         senderDatagram.reset();
-                        senderDatagram.writeUTF(m.toString());
-                        senderConnection.send(senderDatagram);  // broadcast
+                        senderDatagram.writeUTF(outgoing.get());    // will block until there's a message to send
+                        senderConnection.send(senderDatagram);      // broadcast
                     } catch (InterruptedException e) {
                         System.out.println("Error, ZigBee threads: Could not get message from outgoing buffer. " + e);
                     } catch (IOException e) {
@@ -68,18 +69,37 @@ public class Zigbee {
                 while (true) {
                     try {
                         receiverDatagram.reset();
-                        receiverConnection.receive(receiverDatagram);
-                        
-                        String msg = receiverDatagram.readUTF();
-                        System.out.println("Zigbee got: " + msg);
-                        
-                        //TODO: process message, only if we're not the sender and if it's a new messageID
+                        receiverConnection.receive(receiverDatagram);   // will block until there's a message to receive
+                        parseIncomingMessage(receiverDatagram.readUTF());
                     } catch (IOException e) {
                         System.out.println("Error, ZigBee I/O: Nothing received. " + e);
                     }
                 }
             }
         }.start();
+    }
+    
+    public void parseIncomingMessage(String msg) {
+        try {
+            msgJSON = new JSONObject(msg);
+            
+            // process message, only if we're not the sender and if it's a new messageID
+            if (!msgJSON.getString("sender").equals(address) && !lastMessages.contains(msgJSON.getString("messageid"))) {
+                lastMessages.removeElementAt(0);
+                lastMessages.addElement(msgJSON.getString("messageid"));
+                
+                System.out.println("Zigbee got: " + msg);
+                msgAction = msgJSON.getString("action");
+                if (msgAction.equals("adduser")) {
+                    spot.addClient(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender"));
+                }
+                
+                // re-broadcast
+                outgoing.put(msg);
+            }
+        } catch (JSONException e) {
+            System.out.println("Error, ZigBee JSON: " + e);
+        }
     }
     
     public void broadcastNewClient(Client c) {
@@ -96,10 +116,14 @@ public class Zigbee {
     }
     
     public void broadcastJSON(JSONObject m) {
+        sendJSON(m, "");
+    }
+    
+    public void sendJSON(JSONObject m, String receiverUserID) {
         try {
             // add sender, receiver, and messageID
             m.put("sender", address);
-            m.put("receiver", "");
+            m.put("receiver", receiverUserID);
             m.put("messageid", address + (seqNo++));
             
             // serialize JSON and send off
