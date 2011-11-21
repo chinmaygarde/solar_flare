@@ -274,4 +274,8 @@ public class Wifi {
         }
 
     }
+
+    void sendToClientUserId(String userID, String message) {
+        sendToClient((Integer)localClientCIDs.get(userID), message);
+    }
 }

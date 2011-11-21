@@ -15,7 +15,7 @@ import org.json.me.JSONObject;
 public class Zigbee {
     private SolarFlare spot;
     public String address;             // spot's 64-bit dotted MAC address
-    private int seqNo;                  // sequence counter for outgoing messages 
+    public int seqNo;                  // sequence counter for outgoing messages 
     private DatagramConnection senderConnection;
     private Datagram senderDatagram;
     private RadiogramConnection receiverConnection;
@@ -91,10 +91,17 @@ public class Zigbee {
                 System.out.println("Zigbee got: " + msg);
                 msgAction = msgJSON.getString("action");
                 if (msgAction.equals("adduser")) {
-                    spot.clients.
-                            put(msgJSON.getString("userid"), 
-                                new Client(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender")));
-                    broadcast(msg);
+                    // We need to pass the messageId since we need to pass the message id that is present in the message
+                    spot.addClient(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender"),msgJSON.getString("messageid"));
+                }
+                else if (msgAction.equals("removeuser")){
+                    spot.removeClient(msgJSON.getString("userid"), msg);
+                }
+                else if (msgAction.equals("usermessage")){
+                    if(msgJSON.getString("receiver").equals(address))
+                        spot.sendUserMessage(msgJSON.getString("userid"), msgJSON.getString("message"));
+                    else
+                        broadcast(msg);
                 }
                 
                 // re-broadcast
@@ -105,12 +112,15 @@ public class Zigbee {
         }
     }
     
-    public void broadcastNewClient(Client c) {
+    public void broadcastNewClient(Client c, String messageId) {
         try {
             JSONObject m = new JSONObject();
             m.put("action", "adduser");
             m.put("username", c.userName);
             m.put("userid", c.userID);
+            m.put("sender", c.spotAddress);
+            m.put("receiver","");
+            m.put("messageid", messageId); // We need to add messageId present in message and not add a new messageID
             broadcastJSON(m);
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
@@ -125,9 +135,8 @@ public class Zigbee {
     public void sendJSON(JSONObject m, String receiverUserID) {
         try {
             // add sender, receiver, and messageID
-            m.put("sender", address);
-            m.put("receiver", receiverUserID);
-            m.put("messageid", address + (seqNo++));
+            if (!receiverUserID.equals(""))
+                m.put("receiver", receiverUserID);
             
             // serialize JSON and send off
             broadcast(m.toString());
@@ -146,7 +155,7 @@ public class Zigbee {
             JSONObject m = new JSONObject();
             m.put("action", "removeuser");
             m.put("username", c.userName);
-            m.put("userid", c.userID);
+            m.put("userid", c.userID);  
             broadcastJSON(m);
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);

@@ -51,10 +51,10 @@ public class SolarFlare extends MIDlet {
     public void addLocalClient(String userID, String userName, Integer clientCID) {
         System.out.println("Adding local client: " + userID + "(" + userName + ") with CID " + clientCID);
         wifi.sendClientList(clientCID);     // send our list of known clients to the new user
-        addClient(userID, userName, zigbee.address);    // add user to local state
+        addClient(userID, userName, zigbee.address, zigbee.address+(zigbee.seqNo++));    // add user to local state
     }
     
-    public void addClient(String userID, String userName, String spotAddress) {
+    public void addClient(String userID, String userName, String spotAddress, String messageId) {
         Client c = new Client(userID, userName, spotAddress);
         clients.put(userID, c); 
         
@@ -62,14 +62,15 @@ public class SolarFlare extends MIDlet {
         // TODO: handle forwarding of broadcast addClients from other sunspots 
         //(handle the case when this sunspot is a router to other sunspots)
         //if (spotAddress.equals(zigbee.address)) {
-            zigbee.broadcastNewClient(c);
+            zigbee.broadcastNewClient(c, messageId);
         //}
         
         //TODO: tell all local clients about the new user
         wifi.broadcastNewClient(c);
     }
     
-  public void removeClient(String userID) {
+  public void removeClient(String userID, String msg) {
+      
         
         Client c = (Client)clients.remove(userID); 
         
@@ -77,7 +78,7 @@ public class SolarFlare extends MIDlet {
         // TODO: handle forwarding of broadcast addClients from other sunspots 
         //(handle the case when this sunspot is a router to other sunspots)
         //if (spotAddress.equals(zigbee.address)) {
-            zigbee.broadcastRemoveClient(c);
+            zigbee.broadcast(msg);
         //}
         
         //TODO: tell all local clients about the new user
@@ -88,5 +89,9 @@ public class SolarFlare extends MIDlet {
     }
  
     protected void destroyApp(boolean unconditional) throws MIDletStateChangeException {
+    }
+
+    void sendUserMessage(String userID, String message) {
+        wifi.sendToClientUserId(userID, message);
     }
 }
