@@ -91,7 +91,10 @@ public class Zigbee {
                 System.out.println("Zigbee got: " + msg);
                 msgAction = msgJSON.getString("action");
                 if (msgAction.equals("adduser")) {
-                    spot.addClient(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender"));
+                    spot.clients.
+                            put(msgJSON.getString("userid"), 
+                                new Client(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender")));
+                    broadcast(msg);
                 }
                 
                 // re-broadcast
@@ -136,5 +139,18 @@ public class Zigbee {
     public void broadcast(String m) {
         // add message to outgoing buffer
         outgoing.put(m);
+    }
+
+    void broadcastRemoveClient(Client c) {
+        try {
+            JSONObject m = new JSONObject();
+            m.put("action", "removeuser");
+            m.put("username", c.userName);
+            m.put("userid", c.userID);
+            broadcastJSON(m);
+        } catch (JSONException e) {
+            System.out.println("Error, ZigBee JSON: " + e);
+        }
+
     }
 }

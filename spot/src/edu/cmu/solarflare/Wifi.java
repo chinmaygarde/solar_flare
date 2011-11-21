@@ -254,4 +254,24 @@ public class Wifi {
             Utils.sleep(10);
         }
     }
+
+    void broadcastRemoveClient(Client c) {
+        JSONArray clientArray = new JSONArray();
+        clientArray.put(c.toJSONObject());
+        JSONObject m = new JSONObject();
+        String userID;
+        try {
+            m.put("action", "removeuser");
+            m.put("users", clientArray);
+            for (Enumeration e = localClientCIDs.keys(); e.hasMoreElements();) {
+                userID = (String) e.nextElement();
+                if (!userID.equals(c.userID)) {
+                    sendToClient((Integer) localClientCIDs.get(userID), m.toString());
+                }
+            }
+        } catch (JSONException e) {
+            System.out.println("Error, WiFi JSON: " + e);
+        }
+
+    }
 }

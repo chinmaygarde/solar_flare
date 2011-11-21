@@ -26,14 +26,14 @@ public class SolarFlare extends MIDlet {
         
         // communication
         zigbee = new Zigbee(this);
-        wifi = new Wifi(this, "ulala", 10000);  // TCP server on port 10000
+        //wifi = new Wifi(this, "ulala", 10000);  // TCP server on port 10000
         
         try {
             zigbee.init();
         } catch (IOException e) {
             System.out.println("Error, ZigBee I/O: Could not open radiogram broadcast connection. " + e);
         }
-        
+        /*
         try {
             wifi.init();
         } catch (TimeoutException e) {
@@ -43,9 +43,9 @@ public class SolarFlare extends MIDlet {
         } catch (Exception e) {
             System.out.println("Error, WiFi general: " + e);
         }
-        
+        */
         zigbee.startComm();
-        wifi.startComm();
+        //wifi.startComm();
     }
  
     public void addLocalClient(String userID, String userName, Integer clientCID) {
@@ -59,12 +59,29 @@ public class SolarFlare extends MIDlet {
         clients.put(userID, c); 
         
         // broadcast new client info if it's a local client
-        if (spotAddress.equals(zigbee.address)) {
+        // TODO: handle forwarding of broadcast addClients from other sunspots 
+        //(handle the case when this sunspot is a router to other sunspots)
+        //if (spotAddress.equals(zigbee.address)) {
             zigbee.broadcastNewClient(c);
-        }
+        //}
         
         //TODO: tell all local clients about the new user
         wifi.broadcastNewClient(c);
+    }
+    
+  public void removeClient(String userID) {
+        
+        Client c = (Client)clients.remove(userID); 
+        
+        // broadcast new client info if it's a local client
+        // TODO: handle forwarding of broadcast addClients from other sunspots 
+        //(handle the case when this sunspot is a router to other sunspots)
+        //if (spotAddress.equals(zigbee.address)) {
+            zigbee.broadcastRemoveClient(c);
+        //}
+        
+        //TODO: tell all local clients about the new user
+        wifi.broadcastRemoveClient(c);
     }
     
     protected void pauseApp() {
