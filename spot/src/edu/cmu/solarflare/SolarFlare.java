@@ -16,13 +16,15 @@ public class SolarFlare extends MIDlet {
     public EDemoBoard board = EDemoBoard.getInstance();
     private Zigbee zigbee;
     private Wifi wifi;
-    public Hashtable clients;          // all known clients in the network (userID => Client object)
+    public Hashtable clients;       // all known clients in the network (userID => Client object)
+    private Vector localClients;    // all wifi users connected to this SPOT
  
     protected void startApp() throws MIDletStateChangeException {
         System.out.println("SPOT on.");
         
         // state
         clients = new Hashtable();
+        localClients = new Vector();
         
         // communication
         zigbee = new Zigbee(this);
@@ -31,7 +33,7 @@ public class SolarFlare extends MIDlet {
         try {
             zigbee.init();
         } catch (IOException e) {
-            System.out.println("Error, ZigBee I/O: Could not open radiogram broadcast connection. " + e);
+            System.out.println("Error, ZigBee I/O: Could not open radiogram send/receive connection. " + e);
         }
         
         try {
@@ -51,6 +53,7 @@ public class SolarFlare extends MIDlet {
     public void addLocalClient(String userID, String userName, Integer clientCID) {
         System.out.println("Adding local client: " + userID + "(" + userName + ") with CID " + clientCID);
         wifi.sendClientList(clientCID);     // send our list of known clients to the new user
+        localClients.addElement(userID);
         addClient(userID, userName, zigbee.address);    // add user to local state
     }
     
@@ -63,8 +66,24 @@ public class SolarFlare extends MIDlet {
             zigbee.broadcastNewClient(c);
         }
         
-        //TODO: tell all local clients about the new user
+        // tell all local clients about the new user
         wifi.broadcastNewClient(c);
+    }
+    
+    public void relayUserMessageToZigbee(String senderUserID, String receiverUserID, String msg) {
+        if (clients.contains(receiverUserID)) {
+            zigbee.sendUserMessage(senderUserID, receiverUserID, ((Client) clients.get(receiverUserID)).spotAddress, msg);
+        } else {
+            System.out.println("Error, general: SPOT isn't aware of remote user \"" + receiverUserID + "\". Can't relay message.");
+        }
+    }
+    
+    public void relayUserMessageToWifi(String senderUserID, String receiverUserID, String msg) {
+        if (localClients.contains(receiverUserID)) {
+            wifi.relayUserMessage(senderUserID, receiverUserID, msg);
+        } else {
+            System.out.println("Error, general: SPOT isn't aware of local user \"" + receiverUserID + "\". Can't relay message.");
+        }
     }
     
     protected void pauseApp() {

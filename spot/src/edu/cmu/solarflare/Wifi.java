@@ -140,10 +140,12 @@ public class Wifi {
                         msgJSON.getString("username"),
                         clientCID);
             } else if (msgAction.equals("usermessage")) {
-                
+                spot.relayUserMessageToZigbee(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
             } else {
                 System.out.println("Message action '" + msgAction + "' not recognized!");
             }
+            
+            System.out.println("WiFi executed: " + msgAction);
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
         }
@@ -165,18 +167,32 @@ public class Wifi {
         }
     }
     
+    public void relayUserMessage(String senderUserID, String receiverUserID, String msg) {
+        JSONObject m = new JSONObject();
+        try {
+            m.put("action", "usermessage");
+            m.put("sender_userid", senderUserID);
+            m.put("receiver_userid", receiverUserID);
+            m.put("message", msg);
+            sendToClient((Integer) localClientCIDs.get(receiverUserID), m.toString());
+        } catch (JSONException e) {
+            System.out.println("Error, WiFi JSON: " + e);
+        }
+    }
+    
     public void broadcastNewClient(Client c) {
         JSONArray clientArray = new JSONArray();
         clientArray.put(c.toJSONObject());
         JSONObject m = new JSONObject();
-        String userID;
+        String userID, msg;
         try {
             m.put("action", "adduser");
             m.put("users", clientArray);
+            msg = m.toString();
             for (Enumeration e = localClientCIDs.keys(); e.hasMoreElements();) {
                 userID = (String) e.nextElement();
                 if (!userID.equals(c.userID)) {
-                    sendToClient((Integer) localClientCIDs.get(userID), m.toString());
+                    sendToClient((Integer) localClientCIDs.get(userID), msg);
                 }
             }
         } catch (JSONException e) {

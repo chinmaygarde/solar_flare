@@ -50,9 +50,12 @@ public class Zigbee {
             public void run() {                
                 while (true) {
                     try {
+                        String s = outgoing.get();      // will block until there's a message to send
                         senderDatagram.reset();
-                        senderDatagram.writeUTF(outgoing.get());    // will block until there's a message to send
+                        senderDatagram.writeUTF(s);
                         senderConnection.send(senderDatagram);      // broadcast
+                        
+                        System.out.println("ZigBee sent: " + s);
                     } catch (InterruptedException e) {
                         System.out.println("Error, ZigBee threads: Could not get message from outgoing buffer. " + e);
                     } catch (IOException e) {
@@ -80,22 +83,32 @@ public class Zigbee {
     }
     
     public void parseIncomingMessage(String msg) {
+        System.out.println("Zigbee got: " + msg);
         try {
             msgJSON = new JSONObject(msg);
             
             // process message, only if we're not the sender and if it's a new messageID
             if (!msgJSON.getString("sender").equals(address) && !lastMessages.contains(msgJSON.getString("messageid"))) {
-                lastMessages.removeElementAt(0);
+                if (lastMessages.size() > 0) {
+                    lastMessages.removeElementAt(0);
+                }
                 lastMessages.addElement(msgJSON.getString("messageid"));
                 
-                System.out.println("Zigbee got: " + msg);
                 msgAction = msgJSON.getString("action");
                 if (msgAction.equals("adduser")) {
                     spot.addClient(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender"));
+                } else if (msgAction.equals("removeuser")) {
+                    //TODO
+                } else if (msgAction.equals("usermessage") && msgJSON.getString("receiver").equals(address)) {
+                    spot.relayUserMessageToWifi(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
+                } else if (msgAction.equals("ack")) {
+                    //TODO
                 }
                 
                 // re-broadcast
                 outgoing.put(msg);
+                
+                System.out.println("Zigbee executed: " + msgAction);
             }
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
@@ -112,18 +125,30 @@ public class Zigbee {
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
         }
-        
+    }
+    
+    public void sendUserMessage(String senderUserID, String receiverUserID, String receiverSpotAddress, String msg) {
+        try {
+            JSONObject m = new JSONObject();
+            m.put("action", "usermessage");
+            m.put("sender_userid", senderUserID);
+            m.put("receiver_userid", receiverUserID);
+            m.put("message", msg);
+            sendJSON(m, receiverSpotAddress);
+        } catch (JSONException e) {
+            System.out.println("Error, ZigBee JSON: " + e);
+        }
     }
     
     public void broadcastJSON(JSONObject m) {
         sendJSON(m, "");
     }
     
-    public void sendJSON(JSONObject m, String receiverUserID) {
+    public void sendJSON(JSONObject m, String receiverSpotAddress) {
         try {
             // add sender, receiver, and messageID
             m.put("sender", address);
-            m.put("receiver", receiverUserID);
+            m.put("receiver", receiverSpotAddress);
             m.put("messageid", address + (seqNo++));
             
             // serialize JSON and send off
