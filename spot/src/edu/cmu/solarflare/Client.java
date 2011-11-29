@@ -21,6 +21,8 @@ public class Client {
             json.put("userid", userID);
         } catch (JSONException e) {
             System.out.println("Error, Client JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, Client JSON: generic exception " + e);
         }
         return json;
     }

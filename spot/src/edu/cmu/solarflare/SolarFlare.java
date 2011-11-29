@@ -14,7 +14,7 @@ import javax.microedition.midlet.MIDletStateChangeException;
 public class SolarFlare extends MIDlet {
  
     public EDemoBoard board = EDemoBoard.getInstance();
-    private Zigbee zigbee;
+    public Zigbee zigbee;
     private Wifi wifi;
     public Hashtable clients;       // all known clients in the network (userID => Client object)
     private Vector localClients;    // all wifi users connected to this SPOT
@@ -34,6 +34,8 @@ public class SolarFlare extends MIDlet {
             zigbee.init();
         } catch (IOException e) {
             System.out.println("Error, ZigBee I/O: Could not open radiogram send/receive connection. " + e);
+        } catch (Exception e) {
+            System.out.println("Error, ZigBee I/O: Could not open radiogram send/receive connection. generic exception " + e);
         }
         
         try {

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+
 import org.json.me.JSONArray;
 import org.json.me.JSONException;
 import org.json.me.JSONObject;
@@ -67,6 +68,24 @@ public class Wifi {
     public void startComm() {
         startSenderThread();
         startReceiverThread();
+        
+    }
+    
+    private void startRandomMessageSender(){
+        new Thread(){
+            public void run(){
+                while(true){
+                    if(outgoing.isEmpty())
+                  
+                            sendToClient(new Integer(1), "ganesha");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        System.out.println("Error, ganesha. " + ex);
+                    }
+                }
+            }
+        }.start();
     }
     
     private void startSenderThread() {
@@ -80,6 +99,8 @@ public class Wifi {
                         this.sleep(100);
                     } catch (InterruptedException e) {
                         System.out.println("Error, WiFi threads: Could not get message from outgoing buffer. " + e);
+                    } catch (Exception e) {
+                        System.out.println("Error, WiFi threads: Could not get message from outgoing buffer. generic exception " + e);
                     }
                 }
             }
@@ -118,6 +139,7 @@ public class Wifi {
                 String[] inMsgArray = Utils.split(inMsg, ' ');
                 if (Integer.parseInt(inMsgArray[1]) == tcpServerCID) {
                     System.out.println("Adding client CID: " + inMsgArray[2]);
+                    startRandomMessageSender();
                     pendingWifiClients.addElement(Integer.valueOf(inMsgArray[2]));  // add client CID and wait for user data
                 }
                 break;
@@ -148,15 +170,19 @@ public class Wifi {
             System.out.println("WiFi executed: " + msgAction);
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, WiFi JSON: generic exception " + e);
         }
     }
     
     // send entire list of known clients to one local user
     public void sendClientList(Integer clientCID) {
         JSONArray clientArray = new JSONArray();
+        spot.clients.put("123456", new Client("123456","uname", spot.zigbee.address));
         for (Enumeration e = spot.clients.elements(); e.hasMoreElements();) {
             clientArray.put(((Client) e.nextElement()).toJSONObject());
         }
+        
         JSONObject m = new JSONObject();
         try {
             m.put("action", "adduser");
@@ -164,6 +190,8 @@ public class Wifi {
             sendToClient(clientCID, m.toString());
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, WiFi JSON: generic exception " + e);
         }
     }
     
@@ -177,6 +205,8 @@ public class Wifi {
             sendToClient((Integer) localClientCIDs.get(receiverUserID), m.toString());
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, WiFi JSON: generic exception " + e);
         }
     }
     
@@ -197,6 +227,8 @@ public class Wifi {
             }
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, WiFi JSON: generic exception " + e);
         }
     }
     
@@ -255,6 +287,8 @@ public class Wifi {
                     Utils.sleep(5);    // a delay is needed for some bytes to show up in spot.board.availableUART()
                 } catch (IOException e) {
                     System.out.println("Error reading from UART: " + e);
+                } catch (Exception e) {
+                    System.out.println("Error reading from UART: generic exception " + e);
                 }
             } 
             while (rxByte != (byte)'\n');

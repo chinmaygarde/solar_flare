@@ -15,6 +15,10 @@ public class MessageBuffer {
         notify();
     }
     
+    public synchronized boolean isEmpty() {
+        return messageQueue.isEmpty();
+    }
+    
     public synchronized String get() throws InterruptedException {
         if (messageQueue.isEmpty()) {
             wait();

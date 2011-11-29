@@ -60,6 +60,8 @@ public class Zigbee {
                         System.out.println("Error, ZigBee threads: Could not get message from outgoing buffer. " + e);
                     } catch (IOException e) {
                         System.out.println("Error, ZigBee I/O: Could not send. " + e);
+                    } catch (Exception e) {
+                        System.out.println("Error, ZigBee I/O: Could not send. Caught in generic exception " + e);
                     }
                 }
             }
@@ -76,6 +78,8 @@ public class Zigbee {
                         parseIncomingMessage(receiverDatagram.readUTF());
                     } catch (IOException e) {
                         System.out.println("Error, ZigBee I/O: Nothing received. " + e);
+                    } catch (Exception e) {
+                        System.out.println("Error, ZigBee I/O: Could not send. Caught in generic exception " + e);
                     }
                 }
             }
@@ -112,6 +116,8 @@ public class Zigbee {
             }
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, ZigBee JSON: Generic exception " + e);
         }
     }
     
@@ -124,6 +130,8 @@ public class Zigbee {
             broadcastJSON(m);
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, ZigBee JSON: generic exception " + e);
         }
     }
     
@@ -137,6 +145,8 @@ public class Zigbee {
             sendJSON(m, receiverSpotAddress);
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, ZigBee JSON:  generic exception " + e);
         }
     }
     
@@ -155,6 +165,8 @@ public class Zigbee {
             broadcast(m.toString());
         } catch (JSONException e) {
             System.out.println("Error, ZigBee JSON: " + e);
+        } catch (Exception e) {
+            System.out.println("Error, ZigBee JSON: generic exception " + e);
         }
     }
     
