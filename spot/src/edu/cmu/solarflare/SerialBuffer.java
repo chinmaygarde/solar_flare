@@ -18,25 +18,24 @@ public class SerialBuffer {
             return;
         }
         
-        System.out.println("Message piece:");
-        for (int i = 0; i < msgPiece.length(); i++) {
-            System.out.println(msgPiece.charAt(i) + " (" + (byte) msgPiece.charAt(i) + ")");
-        }
+//        System.out.println("Message piece:");
+//        for (int i = 0; i < msgPiece.length(); i++) {
+//            System.out.println(msgPiece.charAt(i) + " (" + (byte) msgPiece.charAt(i) + ")");
+//        }
         
         int newLineIndex = msgPiece.indexOf('\n');
         if (newLineIndex != -1) {  
             buffers[currentIndex] = msgInProgress + msgPiece.substring(0, newLineIndex + 1);
             msgInProgress = msgPiece.substring(newLineIndex + 1);
-            //if (msgInProgress.length() < 4) {
             if (msgInProgress.length() > 0 && onlyEscapeChars(msgInProgress)) {
                 msgInProgress = "";
             }
             currentIndex = (currentIndex + 1) % bufferCount;
             
-            System.out.println("Keeping:");
-            for (int i = 0; i < msgInProgress.length(); i++) {
-                System.out.println(msgInProgress.charAt(i) + " (" + (byte) msgInProgress.charAt(i) + ")");
-            }
+//            System.out.println("Keeping:");
+//            for (int i = 0; i < msgInProgress.length(); i++) {
+//                System.out.println(msgInProgress.charAt(i) + " (" + (byte) msgInProgress.charAt(i) + ")");
+//            }
             
             notify();
         } else {
