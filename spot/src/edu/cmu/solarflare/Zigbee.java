@@ -100,7 +100,7 @@ public class Zigbee {
                 } else if (msgAction.equals("removeuser")) {
                     //TODO
                 } else if (msgAction.equals("usermessage") && msgJSON.getString("receiver").equals(address)) {
-                    spot.relayUserMessageToWifi(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
+                    spot.relayUserMessage(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
                 } else if (msgAction.equals("ack")) {
                     //TODO
                 }

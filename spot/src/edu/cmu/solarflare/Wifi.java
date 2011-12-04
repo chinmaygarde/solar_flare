@@ -11,7 +11,6 @@ import org.json.me.JSONException;
 import org.json.me.JSONObject;
 
 public class Wifi {
-    
     private SolarFlare spot;
     public String ssid;
     public int tcpServerPort;
@@ -21,7 +20,7 @@ public class Wifi {
     private int rxBytesAvailable;
     private int tcpServerCID;
     private MessageBuffer outgoing;     // a queue for outgoing messages, emptied by the sender thread
-    private String inMsg;               // incoming message
+    private SerialBuffer incoming;      // a buffer of incoming bytes, emptied by the receiver thread
     private Vector pendingWifiClients;  // CID of wifi clients that have not yet sent their userid
     private Hashtable localClientCIDs;  // CID of clients at our spot's address (userID => clientCID)
     private JSONObject msgJSON;
@@ -34,6 +33,7 @@ public class Wifi {
         this.ssid = ssid;
         this.tcpServerPort = tcpServerPort;
         this.outgoing = new MessageBuffer();
+        this.incoming = new SerialBuffer(3);
         this.pendingWifiClients = new Vector(4);
         this.localClientCIDs = new Hashtable();
     }
@@ -77,7 +77,6 @@ public class Wifi {
                         String m = outgoing.get();  // will block until there's a message to send
                         System.out.println("Sending to WiFi module: " + m);
                         sendUART(m);
-                        this.sleep(100);
                     } catch (InterruptedException e) {
                         System.out.println("Error, WiFi threads: Could not get message from outgoing buffer. " + e);
                     }
@@ -87,18 +86,43 @@ public class Wifi {
     }
     
     private void startReceiverThread() {
+        // first thread monitors the serial connection and immediately populates the SerialBuffer
+        new Thread() {
+            public void run() {
+                byte[] maxBuffer, buffer;
+                int byteCount;
+                while (true) {
+                    try {
+                        maxBuffer = new byte[64];
+                        byteCount = spot.board.readUART(maxBuffer, 0, 64);
+                        buffer = new byte[byteCount];
+                        System.arraycopy(maxBuffer, 0, buffer, 0, byteCount);
+                        incoming.put(new String(buffer));
+                    } catch (IOException e) {
+                        System.out.println("Error, general: serial receiver thread threw - " + e);
+                    }
+                }
+            }
+        }.start();
+        
+        // second thread empties the SerialBuffer and handles the strings
         new Thread() {
             public void run() {
                 while (true) {
-                    parseIncomingMessage();
+                    String s;
+                    try {
+                        s = incoming.get().trim();
+                        System.out.println("Got: " + s);
+                        parseIncomingMessage(s);
+                    } catch (InterruptedException e) {
+                        System.out.println("Error, general: parsing incoming message - " + e);
+                    }
                 }
             }
         }.start();
     }
     
-    private void parseIncomingMessage() {
-        inMsg = readUART(false);
-        
+    private void parseIncomingMessage(String inMsg) {        
         // skip insignificant/empty messages
         if (inMsg.length() < 3) { return; }
         
@@ -125,6 +149,7 @@ public class Wifi {
     }
     
     public void processWifiClientMessage(Integer clientCID, String msg) {
+        if (msg.length() == 0) { return; }        
         System.out.println("Wifi message from " + clientCID + ": " + msg);
         
         try {
@@ -140,7 +165,7 @@ public class Wifi {
                         msgJSON.getString("username"),
                         clientCID);
             } else if (msgAction.equals("usermessage")) {
-                spot.relayUserMessageToZigbee(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
+                spot.relayUserMessage(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
             } else {
                 System.out.println("Message action '" + msgAction + "' not recognized!");
             }
@@ -202,6 +227,7 @@ public class Wifi {
     
     public void sendToClient(Integer clientCID, String msg) {
         outgoing.put((char) 27 + "S" + clientCID + msg);    // <Esc>S<CID><message>
+        outgoing.put((char) 27 + "S" + clientCID);          // send dummy message to "force through" the previous one (hacky)
     }
     
     // Send message to WiFi module and read responses until receiving an expected string.
@@ -252,9 +278,11 @@ public class Wifi {
                     rxBuffer[rxIndex] = rxByte;
                     rxIndex++;
                     //System.out.println((char)rxByte + " = " + rxByte + " (available: " + rxBytesAvailable + ") ");
-                    Utils.sleep(5);    // a delay is needed for some bytes to show up in spot.board.availableUART()
+                    Thread.sleep(5);    // a delay is needed for some bytes to show up in spot.board.availableUART()
                 } catch (IOException e) {
                     System.out.println("Error reading from UART: " + e);
+                } catch (InterruptedException e) {
+                    System.out.println("Error, threads: " + e);
                 }
             } 
             while (rxByte != (byte)'\n');
@@ -267,7 +295,12 @@ public class Wifi {
     private void purgeUART() throws IOException {
         while (spot.board.availableUART() > 0) { 
             spot.board.readUART();
-            Utils.sleep(10);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                System.out.println("Error, threads: " + e);
+            }
+            
         }
     }
 }

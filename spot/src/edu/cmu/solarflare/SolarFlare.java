@@ -28,7 +28,7 @@ public class SolarFlare extends MIDlet {
         
         // communication
         zigbee = new Zigbee(this);
-        wifi = new Wifi(this, "ulala", 10000);  // TCP server on port 10000
+        wifi = new Wifi(this, "ulalaOther", 10000);  // TCP server on port 10000
         
         try {
             zigbee.init();
@@ -70,19 +70,13 @@ public class SolarFlare extends MIDlet {
         wifi.broadcastNewClient(c);
     }
     
-    public void relayUserMessageToZigbee(String senderUserID, String receiverUserID, String msg) {
-        if (clients.contains(receiverUserID)) {
-            zigbee.sendUserMessage(senderUserID, receiverUserID, ((Client) clients.get(receiverUserID)).spotAddress, msg);
-        } else {
-            System.out.println("Error, general: SPOT isn't aware of remote user \"" + receiverUserID + "\". Can't relay message.");
-        }
-    }
-    
-    public void relayUserMessageToWifi(String senderUserID, String receiverUserID, String msg) {
+    public void relayUserMessage(String senderUserID, String receiverUserID, String msg) {
         if (localClients.contains(receiverUserID)) {
             wifi.relayUserMessage(senderUserID, receiverUserID, msg);
+        } else if (clients.contains(receiverUserID)) {
+            zigbee.sendUserMessage(senderUserID, receiverUserID, ((Client) clients.get(receiverUserID)).spotAddress, msg);
         } else {
-            System.out.println("Error, general: SPOT isn't aware of local user \"" + receiverUserID + "\". Can't relay message.");
+            System.out.println("Error, general: SPOT isn't aware of user \"" + receiverUserID + "\". Can't relay message.");
         }
     }
     
