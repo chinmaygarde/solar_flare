@@ -14,7 +14,7 @@ public class SerialBuffer {
     }
     
     public synchronized void put(String msgPiece) {
-        if (onlyEscapeChars(msgPiece)) {
+        if (msgInProgress.length() < 4 && onlyEscapeChars(msgPiece)) {
             return;
         }
         
@@ -28,7 +28,7 @@ public class SerialBuffer {
             buffers[currentIndex] = msgInProgress + msgPiece.substring(0, newLineIndex + 1);
             msgInProgress = msgPiece.substring(newLineIndex + 1);
             //if (msgInProgress.length() < 4) {
-            if (onlyEscapeChars(msgInProgress)) {
+            if (msgInProgress.length() > 0 && onlyEscapeChars(msgInProgress)) {
                 msgInProgress = "";
             }
             currentIndex = (currentIndex + 1) % bufferCount;
@@ -64,9 +64,9 @@ public class SerialBuffer {
     
     private boolean onlyEscapeChars(String msgPiece) {
         // check if the msgPiece only contains <Esc>, E, or 0 characters
-        //if (msgPiece.replace((char) 27, ' ').replace((char) 69, ' ').replace((char) 79, ' ').trim().equals("")) {
-        char lastChar = msgPiece.charAt(msgPiece.length() - 1);
-        if (lastChar == (char) 27 || lastChar == (char) 69 || lastChar == (char) 79) {
+        if (msgPiece.replace((char) 27, ' ').replace((char) 69, ' ').replace((char) 79, ' ').trim().equals("")) {
+        //char lastChar = msgPiece.charAt(msgPiece.length() - 1);
+        //if (lastChar == (char) 27 || lastChar == (char) 69 || lastChar == (char) 79) {
             return true;
         } else {
             return false;
