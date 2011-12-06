@@ -13,6 +13,7 @@ import org.json.me.JSONObject;
 public class Wifi {
     private SolarFlare spot;
     public String ssid;
+    public boolean isActive;
     public int tcpServerPort;
     private byte[] rxBuffer;
     private byte rxIndex;
@@ -28,6 +29,7 @@ public class Wifi {
     public Wifi(SolarFlare spot, String ssid, int tcpServerPort) {
         this.spot = spot;
         this.ssid = ssid;
+        this.isActive = false;
         this.tcpServerPort = tcpServerPort;
         this.outgoing = new MessageBuffer();
         this.incoming = new SerialBuffer(3);
@@ -59,6 +61,8 @@ public class Wifi {
             sendAndCheckUART(startupCommands[i][0], startupCommands[i][1], 5);
         }
         
+        this.isActive = true;
+        outgoing.activate();
         System.out.println("Wifi on.");
     }
     
@@ -161,12 +165,17 @@ public class Wifi {
             String msgAction = msgJSON.getString("action");
             
             // protocol-specific processing
-            if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
-                // add client
+            if (msgAction.equals("connect")) {
                 String userID = msgJSON.getString("userid");
-                localClientCIDs.put(userID, clientCID);
-                localClientUserIDs.put(clientCID, userID);
-                spot.addLocalClient(userID, msgJSON.getString("username"));
+                if (pendingWifiClients.removeElement(clientCID)) {
+                    // add client
+                    localClientCIDs.put(userID, clientCID);
+                    localClientUserIDs.put(clientCID, userID);
+                    spot.addLocalClient(userID, msgJSON.getString("username"));
+                } else {
+                    // re-send client list
+                    sendClientList(userID);
+                }
             } else if (msgAction.equals("usermessage")) {
                 spot.relayUserMessage(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
             } else {

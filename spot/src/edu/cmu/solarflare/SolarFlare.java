@@ -45,7 +45,10 @@ public class SolarFlare extends MIDlet {
         }
         
         zigbee.startComm();
-        wifi.startComm();
+        
+        if (wifi.isActive) {
+            wifi.startComm();
+        }
     }
  
     public void addLocalClient(String userID, String userName) {
