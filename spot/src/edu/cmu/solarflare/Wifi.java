@@ -19,14 +19,11 @@ public class Wifi {
     private byte rxByte;
     private int rxBytesAvailable;
     private int tcpServerCID;
-    private MessageBuffer outgoing;     // a queue for outgoing messages, emptied by the sender thread
-    private SerialBuffer incoming;      // a buffer of incoming bytes, emptied by the receiver thread
-    private Vector pendingWifiClients;  // CID of wifi clients that have not yet sent their userid
-    private Hashtable localClientCIDs;  // CID of clients at our spot's address (userID => clientCID)
-    private JSONObject msgJSON;
-    private String msgAction;
-    private JSONArray msgClientArray;
-    private JSONObject msgClient;
+    private MessageBuffer outgoing;         // a queue for outgoing messages, emptied by the sender thread
+    private SerialBuffer incoming;          // a buffer of incoming bytes, emptied by the receiver thread
+    private Vector pendingWifiClients;      // CID of wifi clients that have not yet sent their userid
+    private Hashtable localClientCIDs;      // CID of clients at our spot's address (userID => clientCID)
+    private Hashtable localClientUserIDs;   // inverse of localClientCIDs (clientCID => userID)
     
     public Wifi(SolarFlare spot, String ssid, int tcpServerPort) {
         this.spot = spot;
@@ -36,6 +33,7 @@ public class Wifi {
         this.incoming = new SerialBuffer(3);
         this.pendingWifiClients = new Vector(4);
         this.localClientCIDs = new Hashtable();
+        this.localClientUserIDs = new Hashtable();
     }
     
     public void init() throws TimeoutException, IOException, Exception {    
@@ -52,7 +50,7 @@ public class Wifi {
             {"AT+DHCPSRVR=1", "0"},                                             // start DHCP server
             {"AT+WA=" + ssid, "0"},                                             // start access point, broadcassting specified SSID
             {"AT+NSTCP=" + tcpServerPort, "0"},                                 // start tcp server on the specified port
-            {"AT+WRXACTIVE=1", "0"}                                            // keep 802.11 receiver always on
+            {"AT+WRXACTIVE=1", "0"}                                             // keep 802.11 receiver always on
 //            {"AT+WP=4", "0"}                                                    // set wifi transmit power to medium (0 max, 7 min)
         };
         
@@ -145,6 +143,12 @@ public class Wifi {
                     pendingWifiClients.addElement(Integer.valueOf(inMsgArray[2]));  // add client CID and wait for user data
                 }
                 break;
+            case '8':
+                // 8 1
+                Integer localCID = Integer.valueOf(Utils.split(inMsg, ' ')[1]);
+                spot.removeLocalClient((String) localClientUserIDs.get(localCID));
+                localClientCIDs.remove((String) localClientUserIDs.remove(localCID));
+                break;
         }
     }
     
@@ -153,17 +157,16 @@ public class Wifi {
         System.out.println("Wifi message from " + clientCID + ": " + msg);
         
         try {
-            msgJSON = new JSONObject(msg);
-            msgAction = msgJSON.getString("action");
+            JSONObject msgJSON = new JSONObject(msg);
+            String msgAction = msgJSON.getString("action");
             
             // protocol-specific processing
             if (msgAction.equals("connect") && pendingWifiClients.removeElement(clientCID)) {
                 // add client
-                localClientCIDs.put(msgJSON.getString("userid"), clientCID);
-                spot.addLocalClient(
-                        msgJSON.getString("userid"),
-                        msgJSON.getString("username"),
-                        clientCID);
+                String userID = msgJSON.getString("userid");
+                localClientCIDs.put(userID, clientCID);
+                localClientUserIDs.put(clientCID, userID);
+                spot.addLocalClient(userID, msgJSON.getString("username"));
             } else if (msgAction.equals("usermessage")) {
                 spot.relayUserMessage(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
             } else {
@@ -177,7 +180,7 @@ public class Wifi {
     }
     
     // send entire list of known clients to one local user
-    public void sendClientList(Integer clientCID) {
+    public void sendClientList(String userID) {
         JSONArray clientArray = new JSONArray();
         for (Enumeration e = spot.clients.elements(); e.hasMoreElements();) {
             clientArray.put(((Client) e.nextElement()).toJSONObject());
@@ -186,7 +189,7 @@ public class Wifi {
         try {
             m.put("action", "adduser");
             m.put("users", clientArray);
-            sendToClient(clientCID, m.toString());
+            sendToClient((Integer) localClientCIDs.get(userID), m.toString());
         } catch (JSONException e) {
             System.out.println("Error, WiFi JSON: " + e);
         }
@@ -205,13 +208,18 @@ public class Wifi {
         }
     }
     
-    public void broadcastNewClient(Client c) {
+    public void broadcastClientStatus(Client c, String status) {
         JSONArray clientArray = new JSONArray();
         clientArray.put(c.toJSONObject());
         JSONObject m = new JSONObject();
         String userID, msg;
         try {
-            m.put("action", "adduser");
+            if (status.equals("online")) {
+                m.put("action", "adduser");
+            } else if (status.equals("offline")) {
+                m.put("action", "removeuser");
+            }
+            
             m.put("users", clientArray);
             msg = m.toString();
             for (Enumeration e = localClientCIDs.keys(); e.hasMoreElements();) {

@@ -98,7 +98,7 @@ public class Zigbee {
                 if (msgAction.equals("adduser")) {
                     spot.addClient(msgJSON.getString("userid"), msgJSON.getString("username"), msgJSON.getString("sender"));
                 } else if (msgAction.equals("removeuser")) {
-                    //TODO
+                    spot.removeClient(msgJSON.getString("userid"));
                 } else if (msgAction.equals("usermessage") && msgJSON.getString("receiver").equals(address)) {
                     spot.relayUserMessage(msgJSON.getString("sender_userid"), msgJSON.getString("receiver_userid"), msgJSON.getString("message"));
                 } else if (msgAction.equals("ack")) {
@@ -115,10 +115,16 @@ public class Zigbee {
         }
     }
     
-    public void broadcastNewClient(Client c) {
+    public void broadcastClientStatus(Client c, String status) {
         try {
             JSONObject m = new JSONObject();
-            m.put("action", "adduser");
+            
+            if (status.equals("online")) {
+                m.put("action", "adduser");
+            } else if (status.equals("offline")) {
+                m.put("action", "removeuser");
+            }
+            
             m.put("username", c.userName);
             m.put("userid", c.userID);
             broadcastJSON(m);
