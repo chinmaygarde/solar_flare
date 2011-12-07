@@ -150,6 +150,7 @@ public class Wifi {
             case '8':
                 // 8 1
                 Integer localCID = Integer.valueOf(Utils.split(inMsg, ' ')[1]);
+                if (!localClientCIDs.contains(localCID)) { break; }
                 spot.removeLocalClient((String) localClientUserIDs.get(localCID));
                 localClientCIDs.remove((String) localClientUserIDs.remove(localCID));
                 break;

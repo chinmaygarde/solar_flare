@@ -38,6 +38,7 @@ public class Zigbee {
         senderDatagram = senderConnection.newDatagram(senderConnection.getMaximumLength());
         receiverConnection = (RadiogramConnection) Connector.open("radiogram://:37");
         receiverDatagram = receiverConnection.newDatagram(receiverConnection.getMaximumLength());
+        outgoing.activate();
     }
     
     public void startComm() {
