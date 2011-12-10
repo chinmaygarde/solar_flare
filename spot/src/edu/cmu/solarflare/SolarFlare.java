@@ -89,7 +89,7 @@ public class SolarFlare extends MIDlet {
     public void relayUserMessage(String senderUserID, String receiverUserID, String msg) {
         if (localClients.contains(receiverUserID)) {
             wifi.relayUserMessage(senderUserID, receiverUserID, msg);
-        } else if (clients.contains(receiverUserID)) {
+        } else if (clients.containsKey(receiverUserID)) {
             zigbee.sendUserMessage(senderUserID, receiverUserID, ((Client) clients.get(receiverUserID)).spotAddress, msg);
         } else {
             System.out.println("Error, general: SPOT isn't aware of user \"" + receiverUserID + "\". Can't relay message.");
